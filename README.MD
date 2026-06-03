@@ -23,7 +23,7 @@ along with the database filesystem framework and smart caching.
 
 In 2007 Alfresco Software bought the rights to the JLAN Server code rebranding it as Alfresco-JLAN,
 and releasing the code as open source. Development continued with the addition of support for 
-NTLMv2 and Kerberos enterprise authentication, scaleability enhancements using NIO, thread
+NTLMv2 and Kerberos enterprise authentication, scalability enhancements using NIO, thread
 pools and memory pools, plus cluster support using Hazelcast, and FTPS support.
 
 In recent years no new development has been done on the Alfresco-JLAN code.
