@@ -394,7 +394,7 @@ public abstract class FileState implements Serializable {
     public synchronized int removeAccessToken(FileAccessToken token) {
 
         if (m_accessList != null && !token.isAttributesOnly()) {
-            if ( !m_accessList.remove(token))
+            if ( !m_accessList.remove(token) && !token.isReleased())
                 Debug.println("*** Failed to remove access token=" + token + ", list=" + m_accessList);
         }
 
@@ -471,28 +471,6 @@ public abstract class FileState implements Serializable {
         m_retainUntil = expires;
     }
 
-    /**
-     * Set the access mask, from the first file open
-     *
-     * @param accMask int
-     */
-/*
-    public void setAccessMask(int accMask) {
-        if ( getOpenCount() == 0)
-            m_accessMask = accMask;
-    }
-*/
-    /**
-     * Set the shared access mode, from the first file open
-     *
-     * @param mode SharingMode
-     */
-/*
-    public void setSharedAccess(SharingMode mode) {
-        if (getOpenCount() == 0)
-            m_sharedAccess = mode;
-    }
-*/
     /**
      * Set the file data status
      *
@@ -952,6 +930,10 @@ public abstract class FileState implements Serializable {
      */
     public void setFileSize(long fileSize) {
         m_fileSize = fileSize;
+
+        FileInfo fInfo = (FileInfo) findAttribute( FileInformation);
+        if ( fInfo != null)
+            fInfo.setFileSize( fileSize);
     }
 
     /**
@@ -979,6 +961,10 @@ public abstract class FileState implements Serializable {
      */
     public void setAllocationSize(long allocSize) {
         m_allocSize = allocSize;
+
+        FileInfo fInfo = (FileInfo) findAttribute( FileInformation);
+        if ( fInfo != null)
+            fInfo.setAllocationSize( allocSize);
     }
 
     /**

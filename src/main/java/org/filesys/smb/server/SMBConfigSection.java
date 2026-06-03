@@ -138,6 +138,9 @@ public class SMBConfigSection extends ConfigSection {
     // Per session virtual circuit limit
     private int m_virtualCircuitLimit = SMBV1VirtualCircuitList.DefMaxCircuits;
 
+    // Enable idle session check for open files
+    private boolean m_idleCheckOpenFiles = false;
+
     //--------------------------------------------------------------------------------
     //  Win32 NetBIOS configuration
     //
@@ -608,6 +611,13 @@ public class SMBConfigSection extends ConfigSection {
     public final int getSocketTimeout() {
         return m_clientSocketTimeout;
     }
+
+    /**
+     * Return the check open files during idle session check setting
+     *
+     * @return boolean
+     */
+    public final boolean hasIdleCheckOpenFiles() { return m_idleCheckOpenFiles; }
 
     /**
      * Check if socket keep-alives should be enabled for client socket connections
@@ -1412,6 +1422,24 @@ public class SMBConfigSection extends ConfigSection {
         //  Inform listeners, validate the configuration change
         int sts = fireConfigurationChange(ConfigId.SMBSocketTimeout, new Integer(tmo));
         m_clientSocketTimeout = tmo;
+
+        //  Return the change status
+        return sts;
+    }
+
+    /**
+     * Set the idle check open files flag
+     *
+     * @param ena boolean
+     * @return int
+     * @throws InvalidConfigurationException Failed to set the client socket timeout
+     */
+    public final int setIdleCheckOpenFiles(boolean ena)
+        throws InvalidConfigurationException {
+
+        //  Inform listeners, validate the configuration change
+        int sts = fireConfigurationChange(ConfigId.SMBIdleCheckOpenFiles, new Boolean(ena));
+        m_idleCheckOpenFiles = ena;
 
         //  Return the change status
         return sts;

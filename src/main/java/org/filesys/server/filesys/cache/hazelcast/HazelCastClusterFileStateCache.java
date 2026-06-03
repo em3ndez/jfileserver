@@ -312,9 +312,9 @@ public abstract class HazelCastClusterFileStateCache extends ClusterFileStateCac
     /**
      * Dump the state cache entries to the debug device
      *
-     * @param dumpAttribs boolean
+     * @param dumpFlags EnumSet&lt;DumpFlags&gt;
      */
-    public void dumpCache(boolean dumpAttribs) {
+    public void dumpCache(EnumSet<DumpFlags> dumpFlags) {
 
         // Dump the file state cache entries to the specified stream
         if (!m_stateCache.isEmpty())
@@ -335,10 +335,11 @@ public abstract class HazelCastClusterFileStateCache extends ClusterFileStateCac
             String fname = keysIter.next();
             FileState state = m_stateCache.get(fname);
 
-            Debug.println("++  " + fname + "(" + state.getSecondsToExpire(curTime) + ") : " + state.toString());
+            if ( state.getOpenCount() > 0 || !dumpFlags.contains( DumpFlags.OpenOnly))
+                Debug.println("++  " + fname + "(" + state.getSecondsToExpire(curTime) + ") : " + state.toString());
 
             // Check if the state attributes should be output
-            if (dumpAttribs)
+            if (dumpFlags.contains( DumpFlags.Attributes))
                 state.DumpAttributes();
         }
 
@@ -709,7 +710,7 @@ public abstract class HazelCastClusterFileStateCache extends ClusterFileStateCac
             // DEBUG
             if (hasDebugLevel(Dbg.EXPIRE)) { // && openCnt > 0) {
                 Debug.println("++ Open files " + openCnt);
-                dumpCache(false);
+                dumpCache(EnumSet.noneOf( DumpFlags.class));
             }
         }
 

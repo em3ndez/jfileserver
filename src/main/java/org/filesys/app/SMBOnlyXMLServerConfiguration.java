@@ -120,7 +120,7 @@ public class SMBOnlyXMLServerConfiguration extends ServerConfiguration {
 	private static final int MemoryPoolMaximumAllocation    = 500;
 	
 	// Maximum session timeout
-	private static final int MaxSessionTimeout				= 60 * 60;	// 1 hour
+	private static final int MaxSessionTimeout				= 60 * 60 * 10;	// 10 hours
 	
 	// Date formatter
 	private SimpleDateFormat m_dateFmt = new SimpleDateFormat("dd-MMM-yyyy hh:mm:ss");
@@ -1260,7 +1260,7 @@ public class SMBOnlyXMLServerConfiguration extends ServerConfiguration {
 		if ( elem != null) {
 			
 			// Validate the session timeout value
-			String sessTmo = getText( elem);
+			String sessTmo = getTextWithEnvVars( elem);
 			if ( sessTmo != null && sessTmo.length() > 0) {
 				try {
 					
@@ -1279,6 +1279,12 @@ public class SMBOnlyXMLServerConfiguration extends ServerConfiguration {
 			else
 				throw new InvalidConfigurationException("Session timeout value not specified");
 		}
+
+		// Check if the idle session cleanup should check if a session/virtual circuit has open files
+		elem = findChildNode( "idleCheckOpenFiles", host.getChildNodes());
+
+		if ( elem != null)
+			smbConfig.setIdleCheckOpenFiles( true);
 
 		// Check if socket keep-alives should be disabled
 		elem = findChildNode( "disableKeepAlive", host.getChildNodes());

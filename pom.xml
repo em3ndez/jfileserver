@@ -5,7 +5,7 @@
     <groupId>org.filesys</groupId>
     <artifactId>jfileserver</artifactId>
     <packaging>jar</packaging>
-    <version>1.4.1-SNAPSHOT</version>
+    <version>1.4.1</version>
 
     <name>${project.groupId}:${project.artifactId}</name>
     <description>Java file server with SMB, FTP/FTPS and NFS support, virtual filesystems, database filesystems</description>
@@ -48,8 +48,8 @@
         <!-- BouncyCastle crypto library -->
         <dependency>
             <groupId>org.bouncycastle</groupId>
-            <artifactId>bcprov-jdk15on</artifactId>
-            <version>1.70</version>
+            <artifactId>bcprov-jdk18on</artifactId>
+            <version>1.78.1</version>
         </dependency>
 
         <!-- Google JSON -->

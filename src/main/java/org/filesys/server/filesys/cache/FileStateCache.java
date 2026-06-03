@@ -20,6 +20,7 @@
 package org.filesys.server.filesys.cache;
 
 import java.io.IOException;
+import java.util.EnumSet;
 
 import org.filesys.debug.Debug;
 import org.filesys.locking.FileLock;
@@ -75,6 +76,14 @@ public abstract class FileStateCache {
     private boolean m_debug = false;
     private boolean m_debugExpired = false;
     private boolean m_dumpOnShutdown = false;
+
+    /**
+     * Dump cache flags
+     */
+    public enum DumpFlags {
+        Attributes,     // dump file state attributes
+        OpenOnly        // only dump open files
+    }
 
     /**
      * Class constructor
@@ -358,9 +367,9 @@ public abstract class FileStateCache {
     /**
      * Dump the state cache entries to the debug device
      *
-     * @param dumpAttribs boolean
+     * @param dumpFlags EnumSet&lt;DumpFlags&gt;
      */
-    public abstract void dumpCache(boolean dumpAttribs);
+    public abstract void dumpCache(EnumSet<DumpFlags> dumpFlags);
 
     /**
      * Return the oplock details for a file, or null if there is no oplock
@@ -386,11 +395,17 @@ public abstract class FileStateCache {
             throws ExistingOpLockException, InvalidOplockStateException {
 
         // Check if the file is only being accessed by one client
-        if (fstate.getOpenCount() != 1)
+        if (fstate.getOpenCount() != 1) {
             return false;
+        }
 
         // Default to storing the oplock in the file state
         fstate.setOpLock(oplock);
+
+        // TEST
+//        Debug.println("*** Add oplock=" + fstate.getOpLock() + ", path=" + fstate.getPath());
+//        dumpCache( true);
+
         return true;
     }
 
@@ -400,6 +415,9 @@ public abstract class FileStateCache {
      * @param fstate FileState
      */
     public void clearOpLock(FileState fstate) {
+
+        // TEST
+//        Debug.println("*** Clear oplock, current=" + fstate.getOpLock());
 
         // Clear oplock details from the file state
         fstate.clearOpLock();
@@ -442,8 +460,16 @@ public abstract class FileStateCache {
             // Get the oplock details
             OpLockDetails oplock = fstate.getOpLock();
 
+            // TEST
+//            Debug.println("*** Add oplock owner=" + owner);
+
             // Add another owner to the oplock
             oplock.addOplockOwner(owner);
+        }
+        else {
+
+            // TEST
+//            Debug.println("*** Add oplock owner, no oplock, owner=" + owner);
         }
     }
 
@@ -469,6 +495,9 @@ public abstract class FileStateCache {
                 // Remove the oplock owner
                 OplockOwner remOwner = oplock.removeOplockOwner(owner);
 
+                // TEST
+//                Debug.println("*** Remove oplock owner=" + owner);
+
             } catch (InvalidOplockStateException ex) {
                 if (Debug.hasDumpStackTraces())
                     Debug.println(ex);
@@ -482,9 +511,15 @@ public abstract class FileStateCache {
 
                     // Clear the oplock, no more owners
                     fstate.clearOpLock();
+
+                    // TEST
+//                    Debug.println("*** Clear oplock, Level II, no owners");
                 }
             }
             else {
+
+                // TEST
+//                Debug.println("*** Clear oplock=" + fstate.getOpLock());
 
                 // Remove the oplock from the file state
                 fstate.clearOpLock();
@@ -665,7 +700,7 @@ public abstract class FileStateCache {
 
         // Check if the state cache entries should be dumped out during shutdown
         if (hasDumpOnShutdown())
-            dumpCache(false);
+            dumpCache(EnumSet.noneOf(DumpFlags.class));
     }
 
     /**
@@ -855,6 +890,11 @@ public abstract class FileStateCache {
 
             // Mark the access token as released
             token.setReleased(true);
+
+            // TEST
+//            Debug.println("*** releaseFileAccess() path=" + fstate.getPath() + ",token=" + token);
+//            Debug.println("*** Oplock owners=" + fstate.getOpLock());
+//            Thread.dumpStack();
         }
 
         // Return the new file open count

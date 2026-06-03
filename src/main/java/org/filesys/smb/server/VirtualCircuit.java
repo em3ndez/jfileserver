@@ -183,6 +183,41 @@ public class VirtualCircuit {
     }
 
     /**
+     * Check if there are any open files on this virtual circuit
+     *
+     * @return boolean
+     */
+    public synchronized boolean hasOpenFiles() {
+
+        // If there are no tree connections then there are no open files
+        if ( m_connections == null || m_connections.isEmpty())
+            return false;
+
+        // Iterate all tree connections
+        Iterator<TreeConnection> treeConns = m_connections.values().iterator();
+
+        while ( treeConns.hasNext()) {
+
+            // Get the current tree connection and check for open files
+            TreeConnection curTree = treeConns.next();
+
+            if ( curTree.openFileCount() > 0) {
+
+                // Check if there are any closed files still in the open file list
+                if ( curTree.removeClosedFiles() > 0) {
+
+                    // Re-check the open file count
+                    if ( curTree.openFileCount() == 0)
+                        continue;
+                }
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Return the tree connection details for the specified tree id.
      *
      * @param treeId int

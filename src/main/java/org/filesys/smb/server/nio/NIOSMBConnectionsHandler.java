@@ -79,6 +79,9 @@ public class NIOSMBConnectionsHandler implements SMBConnectionsHandler, RequestH
     // Client socket timeout, in milliseconds
     private int m_clientSocketTimeout;
 
+    // Idle check for open files
+    private boolean m_idleCheckOpenFiles;
+
     // Enable client socket keep-alives
     private boolean m_socketKeepAlive;
 
@@ -319,7 +322,10 @@ public class NIOSMBConnectionsHandler implements SMBConnectionsHandler, RequestH
         // Set the client socket timeout
         m_clientSocketTimeout = config.getSocketTimeout();
 
-        // Set client socket keep-alives enable
+        // Set idle check for open files flag
+        m_idleCheckOpenFiles = config.hasIdleCheckOpenFiles();
+
+        // Set client socket keep-alive enable
         m_socketKeepAlive = config.hasSocketKeepAlive();
 
         // Get the thread configuration parameters
@@ -328,7 +334,7 @@ public class NIOSMBConnectionsHandler implements SMBConnectionsHandler, RequestH
         // Create the session request handler list and add the first handler
         m_requestHandlers = new ArrayList<SMBRequestHandler>();
         SMBRequestHandler reqHandler = new SMBRequestHandler(m_server.getThreadPool(), SessionSocketsPerHandler, m_clientSocketTimeout,
-                                                             m_maxPacketsPerRun, hasDebug());
+                                                             m_maxPacketsPerRun, m_idleCheckOpenFiles, hasDebug());
         reqHandler.setThreadDebug(m_threadDebug);
         reqHandler.setListener(this);
 
@@ -545,11 +551,11 @@ public class NIOSMBConnectionsHandler implements SMBConnectionsHandler, RequestH
             // Get the head of the request handler list
             reqHandler = m_requestHandlers.get( 0);
 
-            if (reqHandler == null || reqHandler.hasFreeSessionSlot() == false) {
+            if (reqHandler == null || !reqHandler.hasFreeSessionSlot()) {
 
                 // Create a new session request handler and add to the head of the list
                 reqHandler = new SMBRequestHandler(m_server.getThreadPool(), SessionSocketsPerHandler, m_clientSocketTimeout,
-                                                    m_maxPacketsPerRun, hasDebug());
+                                                    m_maxPacketsPerRun, m_idleCheckOpenFiles, hasDebug());
                 reqHandler.setThreadDebug(m_threadDebug);
                 reqHandler.setListener(this);
 

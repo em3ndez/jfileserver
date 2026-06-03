@@ -19,6 +19,7 @@
 
 package org.filesys.smb.server.disk.original;
 
+import org.filesys.debug.Debug;
 import org.filesys.server.filesys.AccessMode;
 import org.filesys.server.filesys.DiskFullException;
 import org.filesys.server.filesys.NetworkFile;

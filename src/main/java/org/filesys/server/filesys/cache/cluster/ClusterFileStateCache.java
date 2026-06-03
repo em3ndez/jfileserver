@@ -178,7 +178,7 @@ public abstract class ClusterFileStateCache extends FileStateCache {
 
         // Check if the state cache entries should be dumped out during shutdown
         if (hasDumpOnShutdown())
-            dumpCache(false);
+            dumpCache(EnumSet.noneOf( DumpFlags.class));
 
         // Shutdown the cluster
         if (m_cluster != null) {

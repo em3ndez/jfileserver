@@ -247,6 +247,7 @@ public class LocalOpLockDetails extends OpLockDetailsAdapter {
                 // Get the deferred session/packet details
                 SMBSrvSession sess = deferReq.getDeferredSession();
                 SMBSrvPacket pkt = deferReq.getDeferredPacket();
+                pkt.incrementDeferredCount();
 
                 try {
 

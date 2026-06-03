@@ -79,6 +79,10 @@ public class SMBRequestHandler extends RequestHandler implements Runnable {
     // Client socket session timeout
     private int m_clientSocketTimeout;
 
+    // Check for open files when a session has timed out, do not close the session/virtual circuit
+    // if there are open files
+    private boolean m_idleCheckOpenFiles;
+
     // Flag to indicate the idle session reaper should be run by the main thread
     private AtomicBoolean m_runIdleSessReaper = new AtomicBoolean();
 
@@ -92,9 +96,10 @@ public class SMBRequestHandler extends RequestHandler implements Runnable {
      * @param maxSess    int
      * @param sockTmo    int
      * @param maxPktsPerRun    int
+     * @param checkOpenFiles boolean
      * @param debug      boolean
      */
-    public SMBRequestHandler(ThreadRequestPool threadPool, int maxSess, int sockTmo, int maxPktsPerRun, boolean debug) {
+    public SMBRequestHandler(ThreadRequestPool threadPool, int maxSess, int sockTmo, int maxPktsPerRun, boolean checkOpenFiles, boolean debug) {
         super(maxSess);
 
         // Set the thread pool to use for request processing
@@ -103,6 +108,7 @@ public class SMBRequestHandler extends RequestHandler implements Runnable {
 
         // Set the client socket timeout
         m_clientSocketTimeout = sockTmo;
+        m_idleCheckOpenFiles = checkOpenFiles;
 
         // Create the session queue
         m_sessQueue = new SrvSessionQueue();
@@ -110,7 +116,7 @@ public class SMBRequestHandler extends RequestHandler implements Runnable {
         // Set the debug output enable
         setDebug(debug);
 
-        // Start the request handler in a seperate thread
+        // Start the request handler in a separate thread
         m_thread = new Thread(this);
         m_thread.setName("SMBRequestHandler_" + ++_handlerId);
         m_thread.setDaemon(false);
@@ -153,6 +159,20 @@ public class SMBRequestHandler extends RequestHandler implements Runnable {
     public final void setSocketTimeout(int tmo) {
         m_clientSocketTimeout = tmo;
     }
+
+    /**
+     * Return the idle check open files setting
+     *
+     * @return boolean
+     */
+    public final boolean hasIdleCheckOpenFiles() { return m_idleCheckOpenFiles; }
+
+    /**
+     * Set the idle check open files setting
+     *
+     * @param ena boolean
+     */
+    public final void setIdleCheckOpenFiles(boolean ena) { m_idleCheckOpenFiles = ena; }
 
     /**
      * Queue a new session to the request handler, wakeup the request handler thread to register it with the
@@ -584,7 +604,7 @@ public class SMBRequestHandler extends RequestHandler implements Runnable {
                 if (sess != null) {
 
                     // Check the time of the last I/O request on this session
-                    if (sess.getLastIOTime() < checkTime || sess.numberOfVirtualCircuits() == 0) {
+                    if (sess.getLastIOTime() < checkTime && sess.numberOfVirtualCircuits() == 0) {
 
                         // DEBUG
                         if (Debug.EnableInfo && hasDebug())
@@ -611,12 +631,25 @@ public class SMBRequestHandler extends RequestHandler implements Runnable {
 
                             if ( curVC.getLastIOTime() < checkTime) {
 
-                                // Add the virtual circuit id to the list of virtual circuits to be removed
-                                //
-                                // Cannot remove now as we are iterating the list
-                                if ( remList == null)
-                                    remList = new ArrayList<Integer>();
-                                remList.add( curVC.getId());
+                                // Check if there are open files
+                                if ( hasIdleCheckOpenFiles() && curVC.hasOpenFiles()) {
+
+                                    // Update the last I/O time for the virtual circuit
+                                    curVC.setLastIOTime( System.currentTimeMillis());
+
+                                    // DEBUG
+                                    if (Debug.EnableInfo && hasDebug())
+                                        Debug.println("[SMB] Idle session has open files, " + sess.getUniqueId() + ", addr=" + sess.getRemoteAddressString());
+                                }
+                                else {
+
+                                    // Add the virtual circuit id to the list of virtual circuits to be removed
+                                    //
+                                    // Cannot remove now as we are iterating the list
+                                    if (remList == null)
+                                        remList = new ArrayList<Integer>();
+                                    remList.add(curVC.getId());
+                                }
                             }
                         }
 

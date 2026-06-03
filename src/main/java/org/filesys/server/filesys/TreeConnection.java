@@ -20,6 +20,7 @@
 
 package org.filesys.server.filesys;
 
+import org.filesys.debug.Debug;
 import org.filesys.server.SrvSession;
 import org.filesys.server.auth.ISMBAuthenticator;
 import org.filesys.server.auth.acl.AccessControl;
@@ -29,7 +30,9 @@ import org.filesys.server.core.InvalidDeviceInterfaceException;
 import org.filesys.server.core.SharedDevice;
 import org.filesys.smb.server.SMBSrvSession;
 
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 
 /**
  * The tree connection class holds the details of a single SMB tree connection. A tree connection
@@ -286,13 +289,54 @@ public class TreeConnection {
         // Remove the file
         NetworkFile netFile = m_files.removeFile( fid, sess);
 
-        if ( netFile != null) {
+        if ( netFile != null && sess != null) {
 
             //	Inform listeners of the file closure
             NetworkFileServer fileSrv = (NetworkFileServer) sess.getServer();
             if (fileSrv != null)
                 fileSrv.fireCloseFileEvent(sess, netFile);
         }
+    }
+
+    /**
+     * Remove files marked as closed from the open file list
+     *
+     * @return int
+     */
+    public synchronized int removeClosedFiles() {
+
+        // Check if there are any open files
+        if ( openFileCount() == 0)
+            return 0;
+
+        // Iterate the open file list
+        Iterator<Integer> fileIter = iterateOpenFileHandles();
+        List<Integer> remList = null;
+
+        while( fileIter.hasNext()) {
+
+            // Get the current open file
+            int fileId = fileIter.next();
+            NetworkFile curFile = findFile( fileId);
+            if ( curFile != null && curFile.isClosed()) {
+
+                // Add to the list of closed files
+                if ( remList == null)
+                    remList = new ArrayList<>();
+                remList.add( fileId);
+           }
+        }
+
+        // Check if there are closed files to remove
+        if ( remList != null) {
+            for(int fileId: remList)
+                removeFile( fileId, null);
+
+            return remList.size();
+        }
+
+        // No closed files found
+        return 0;
     }
 
     /**
@@ -344,13 +388,11 @@ public class TreeConnection {
 
     /**
      * Dump the open file list
-     *
-     * @param sess SMBSrvSession
      */
-    public final void dumpOpenFiles(SMBSrvSession sess) {
+    public final void dumpOpenFiles() {
 
         // Dump the open file list
-        sess.debugPrintln("Dump open files:");
+        Debug.println("Dump open files:");
 
         Iterator<Integer> iterHandles = iterateOpenFileHandles();
 
@@ -361,7 +403,7 @@ public class TreeConnection {
             NetworkFile netFile = findFile( handle);
 
             if ( netFile != null)
-                sess.debugPrintln("  " + handle + ": " + netFile);
+                Debug.println("  " + handle + ": " + netFile);
         }
     }
 }

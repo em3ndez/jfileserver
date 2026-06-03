@@ -20,6 +20,7 @@
 package org.filesys.server.filesys.cache;
 
 import java.io.IOException;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -332,14 +333,14 @@ public class StandaloneFileStateCache extends FileStateCache {
                 Map.Entry<String, FileState> entry = enm.next();
                 FileState state = entry.getValue();
 
-                if (state != null && state.isPermanentState() == false) {
+                if (state != null && !state.isPermanentState()) {
 
                     // Check if the file state has expired and there are no open references to the
                     // file
                     if (state.hasExpired(curTime) && state.getOpenCount() == 0) {
 
                         // Check if there is a state listener to veto the file state expiration
-                        if (hasStateListener() == false || getStateListener().fileStateExpired(state) == true) {
+                        if (!hasStateListener() || getStateListener().fileStateExpired(state)) {
 
                             // Remove the expired file state
                             enm.remove();
@@ -359,7 +360,7 @@ public class StandaloneFileStateCache extends FileStateCache {
             // DEBUG
             if (hasDebugExpiredStates() && openCnt > 0) {
                 Debug.println("++ Open files " + openCnt);
-                dumpCache(false);
+                dumpCache(EnumSet.of( DumpFlags.OpenOnly));
             }
 
             // Return the count of expired file states that were removed
@@ -370,14 +371,14 @@ public class StandaloneFileStateCache extends FileStateCache {
     /**
      * Dump the state cache entries to the specified stream
      *
-     * @param dumpAttribs boolean
+     * @param dumpFlags EnumSet&lt;DumpFlags&gt;
      */
-    public final void dumpCache(boolean dumpAttribs) {
+    public final void dumpCache(EnumSet<DumpFlags> dumpFlags) {
 
         synchronized (m_stateCache) {
 
             // Dump the file state cache entries to the specified stream
-            if (m_stateCache.size() > 0)
+            if ( !m_stateCache.isEmpty())
                 Debug.println("++ FileStateCache Entries:");
 
             long curTime = System.currentTimeMillis();
@@ -385,10 +386,12 @@ public class StandaloneFileStateCache extends FileStateCache {
             for (Map.Entry<String, FileState> entry : m_stateCache.entrySet()) {
 
                 FileState state = entry.getValue();
-                Debug.println("++  " + entry.getKey() + "(" + state.getSecondsToExpire(curTime) + ") : " + state.toString());
+
+                if ( state.getOpenCount() > 0 || !dumpFlags.contains( DumpFlags.OpenOnly))
+                    Debug.println("++  " + entry.getKey() + "(" + state.getSecondsToExpire(curTime) + ") : " + state.toString());
 
                 // Check if the state attributes should be output
-                if (dumpAttribs == true)
+                if (dumpFlags.contains( DumpFlags.Attributes))
                     state.DumpAttributes();
             }
         }
